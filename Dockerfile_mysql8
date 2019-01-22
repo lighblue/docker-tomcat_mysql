@@ -1,0 +1,28 @@
+FROM mysql:8
+
+ENV TOMCAT_MAJOR_VERSION=9
+ENV TOMCAT_VERSION=9.0.14
+ENV TOMCAT_HOME=/opt/tomcat
+ENV MYSQL_ROOT_PASSWORD=root
+
+#http://mirrors.shu.edu.cn/apache/tomcat/tomcat-9/v9.0.14/bin/apache-tomcat-9.0.14.tar.gz
+#https://www-us.apache.org/dist/tomcat/tomcat-9/v9.0.14/bin/apache-tomcat-9.0.14.tar.gz
+#http://mirrors.standaloneinstaller.com/apache/tomcat/tomcat-$TOMCAT_MAJOR_VERSION/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz
+
+WORKDIR /opt
+
+RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir $TOMCAT_HOME && \
+wget -O tomcat.tar.gz http://mirrors.standaloneinstaller.com/apache/tomcat/tomcat-$TOMCAT_MAJOR_VERSION/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz && \
+tar -xvf tomcat.tar.gz && \
+rm -rf tomcat.tar.gz
+
+
+RUN echo "#!/bin/bash" > /opt/runtomcat.sh && \
+echo "$TOMCAT_HOME/bin/catalina.sh run" >> /opt/runtomcat.sh && \
+chmod +x /opt/runtomcat.sh
+
+EXPOSE 3306 8080
+
+ENTRYPOINT ["/opt/runtomcat.sh"]
