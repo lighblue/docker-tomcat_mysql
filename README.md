@@ -10,7 +10,7 @@ https://github.com/lighblue/docker-tomcat_mysql
 
 ```bash
 
-chmod -R 766 webapps
+chmod -R 777 webapps
 
 docker run -d --name='tm' \
 
