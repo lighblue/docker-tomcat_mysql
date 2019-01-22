@@ -9,6 +9,9 @@ https://github.com/lighblue/docker-tomcat_mysql
 ## Rnning
 
 ```bash
+
+chmod -R 766 webapps
+
 docker run -d --name='tm' \
 
          -e DB=dbname \
