@@ -1,13 +1,24 @@
-FROM mysql:8
+FROM mysql:5.7
 
 ENV TOMCAT_MAJOR_VERSION=9
 ENV TOMCAT_VERSION=9.0.14
 ENV TOMCAT_HOME=/opt/tomcat
+
 ENV MYSQL_ROOT_PASSWORD=root
+
+# ENV JAVA_HOME=/opt/java
+ENV JRE_HOME=/opt/jre
 
 #http://mirrors.shu.edu.cn/apache/tomcat/tomcat-9/v9.0.14/bin/apache-tomcat-9.0.14.tar.gz
 #https://www-us.apache.org/dist/tomcat/tomcat-9/v9.0.14/bin/apache-tomcat-9.0.14.tar.gz
 #http://mirrors.standaloneinstaller.com/apache/tomcat/tomcat-$TOMCAT_MAJOR_VERSION/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz
+#https://download.java.net/openjdk/jdk11/ri/openjdk-11+28_linux-x64_bin.tar.gz
+
+ARG DB
+
+ARG DB_USER
+
+ARG DB_PASSWD
 
 WORKDIR /opt
 
@@ -15,14 +26,39 @@ RUN apt-get update && apt-get install -y --no-install-recommends wget && rm -rf 
 
 RUN mkdir $TOMCAT_HOME && \
 wget -O tomcat.tar.gz http://mirrors.standaloneinstaller.com/apache/tomcat/tomcat-$TOMCAT_MAJOR_VERSION/v$TOMCAT_VERSION/bin/apache-tomcat-$TOMCAT_VERSION.tar.gz && \
-tar -xvf tomcat.tar.gz && \
-rm -rf tomcat.tar.gz
+tar -xvf tomcat.tar.gz -C $TOMCAT_HOME --strip-components=1 && \
+rm -rf tomcat.tar.gz && \
+chmod 755 ${TOMCAT_HOME}/bin && \
+chmod 755 ${TOMCAT_HOME}/bin/*.sh
 
+RUN mkdir $JRE_HOME && \
+# wget -O java.tar.gz --no-check-certificate https://download.java.net/openjdk/jdk11/ri/openjdk-11+28_linux-x64_bin.tar.gz && \
+wget -O java.tar.gz --no-check-certificate https://download.java.net/java/early_access/jdk8/b03/BCL/jre-8u202-ea-bin-b03-linux-x64-07_nov_2018.tar.gz && \
+tar -xvf java.tar.gz -C $JRE_HOME --strip-components=1 && \
+rm -rf java.tar.gz
+
+WORKDIR /
+
+# COPY initdb.sh /docker-entrypoint-initdb.d/
 
 RUN echo "#!/bin/bash" > /opt/runtomcat.sh && \
-echo "$TOMCAT_HOME/bin/catalina.sh run" >> /opt/runtomcat.sh && \
-chmod +x /opt/runtomcat.sh
+# echo "[ \$DB ] && [ -f /opt/init.sql ] && cp /opt/init.sql /docker-entrypoint-initdb.d/" >> /opt/runtomcat.sh && \
+# echo "$TOMCAT_HOME/bin/startup.sh" >> /opt/runtomcat.sh && \
+# echo "docker-entrypoint.sh mysqld" >> /opt/runtomcat.sh && \
+echo "docker-entrypoint.sh mysqld" >> /opt/runtomcat.sh && \
+# echo "$TOMCAT_HOME/bin/catalina.sh run" >> /opt/runtomcat.sh && \
+echo "$TOMCAT_HOME/bin/startup.sh" >> /opt/runtomcat.sh && \
+echo "exec gosu mysql $BASH_SOURCE mysqld" >> /opt/runtomcat.sh && \
+chmod 755 /opt/runtomcat.sh && \
+mv /opt/runtomcat.sh /usr/local/bin/ && \
+ln -s usr/local/bin/runtomcat.sh /runtomcat.sh
+
+RUN sed -i '/^exec "$@"$/s/^/#/'  /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 3306 8080
 
-ENTRYPOINT ["/opt/runtomcat.sh"]
+VOLUME [ "/opt/init.sql" ]
+
+VOLUME [ "/opt/tomcat/webapps" ]
+
+ENTRYPOINT ["runtomcat.sh"]
