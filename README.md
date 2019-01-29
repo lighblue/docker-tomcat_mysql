@@ -45,5 +45,5 @@ docker run -d --name='tm' \
 
         -v <fullpath>/webapps:/opt/tomcat/webapps \
 
-        -p 8080:8080 lighblue/tomcat-msyql:8.9.57
+        -p 8080:8080 lighblue/tomcat-mysql:8.9.57
 ```
